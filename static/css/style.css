@@ -236,18 +236,13 @@ body {
   display: flex; align-items: center; justify-content: center;
   z-index: 1000; overflow: hidden;
 }
-.spline-bg {
+.bg-canvas {
   position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-  z-index: 1;
-  background: linear-gradient(135deg, #0f1117 0%, #1f2436 100%);
-}
-.spline-bg spline-viewer {
-  width: 100% !important;
-  height: 100% !important;
+  display: block; z-index: 1;
 }
 .cover-overlay {
   position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.15);
   display: flex; align-items: center; justify-content: center;
   z-index: 10;
 }
