@@ -236,12 +236,23 @@ body {
   display: flex; align-items: center; justify-content: center;
   z-index: 1000; overflow: hidden;
 }
-.spline-iframe {
+.spline-bg {
   position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-  border: none; z-index: 1;
+  z-index: 1;
+  background: linear-gradient(135deg, #0f1117 0%, #1f2436 100%);
+}
+.spline-bg spline-viewer {
+  width: 100% !important;
+  height: 100% !important;
+}
+.cover-overlay {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0, 0, 0, 0.2);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 10;
 }
 .cover-content {
-  position: relative; z-index: 10;
+  position: relative; z-index: 11;
   text-align: center; color: var(--text);
   animation: fadeInUp 0.8s ease-out;
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
@@ -261,7 +272,7 @@ body {
 #startBtn {
   font-size: 1.1rem; padding: 0.85rem 2.5rem;
   animation: buttonPulse 2s ease-in-out infinite;
-  position: relative; z-index: 11;
+  position: relative; z-index: 12;
 }
 @keyframes fadeInUp {
   from { opacity: 0; transform: translateY(30px); }
