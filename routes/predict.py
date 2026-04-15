@@ -530,7 +530,7 @@ def generate_xai_report():
         
         # Format the report text for download
         report_text = _format_report_for_download(
-            slide_record, yolo_result, result, pipeline_name
+            slide_record, yolo_result, result, pipeline_name, detections
         )
         
         return jsonify({
@@ -545,10 +545,14 @@ def generate_xai_report():
 
 
 def _format_report_for_download(slide_record: dict, yolo_result: dict, 
-                                gemini_result: dict, pipeline_name: str) -> str:
+                                gemini_result: dict, pipeline_name: str, 
+                                detections: list = None) -> str:
     """
     Format the report as downloadable text with metadata and detailed analysis.
     """
+    if detections is None:
+        detections = []
+    
     lines = [
         "=" * 80,
         "MALARION — Malaria Parasite Detection & Explainable AI Report",
@@ -583,6 +587,26 @@ def _format_report_for_download(slide_record: dict, yolo_result: dict,
             lines.append(f"  {stage}: {count}")
         lines.append("")
     
+    # Add per-detection breakdown
+    if detections:
+        lines.extend([
+            "─" * 80,
+            "INDIVIDUAL DETECTIONS",
+            "─" * 80,
+            "",
+        ])
+        
+        for idx, det in enumerate(detections, 1):
+            bv_status = "✓ KEPT" if det.get("bv_kept") else "✗ FILTERED"
+            lines.append(f"Detection #{idx}:")
+            lines.append(f"  Class: {det.get('class_name', 'unknown')}")
+            lines.append(f"  YOLO confidence: {det.get('yolo_conf', 0):.4f}")
+            lines.append(f"  BV status: {bv_status}")
+            if det.get("bv_conf") is not None:
+                lines.append(f"  BV confidence: {det.get('bv_conf', 0):.4f}")
+            lines.append(f"  Box: {det.get('box_xyxy', [])}")
+            lines.append("")
+    
     lines.extend([
         "─" * 80,
         "GEMINI XAI — CLINICAL ANALYSIS",
@@ -592,11 +616,19 @@ def _format_report_for_download(slide_record: dict, yolo_result: dict,
     
     # Add Gemini sections
     if isinstance(gemini_result, dict):
-        for section_key in ["1. SLIDE ASSESSMENT", "2. DETECTION QUALITY", 
-                           "3. BV FILTER EFFECT", "4. CLINICAL VERDICT"]:
-            if section_key in gemini_result:
-                lines.append(section_key)
-                lines.append(gemini_result[section_key])
+        sections = gemini_result.get("sections", {})
+        section_defs = [
+            ("slide_assessment", "1. SLIDE ASSESSMENT"),
+            ("detection_quality", "2. DETECTION QUALITY"),
+            ("bv_filter_effect", "3. BV FILTER EFFECT"),
+            ("clinical_verdict", "4. CLINICAL VERDICT"),
+        ]
+        
+        for key, label in section_defs:
+            content = sections.get(key) or gemini_result.get(key, "")
+            if content:
+                lines.append(label)
+                lines.append(content)
                 lines.append("")
     else:
         lines.append(str(gemini_result))
