@@ -471,11 +471,12 @@ function renderResults(data) {
   console.log(`[TABLE] Full data object:`, data);
   
   // Update header based on uses_bv flag
-  thead.innerHTML = `
-    <tr>
-      <th>Class</th><th>Species</th><th>Stage</th>
-      ${usesBv ? '<th>Raw dets</th><th>BV-kept</th><th>BV-kept %</th>' : '<th>Detections</th>'}
-    </tr>`;
+  const headerCells = usesBv 
+    ? '<th>Class</th><th>Species</th><th>Stage</th><th>Raw dets</th><th>BV-kept</th><th>BV-kept %</th>'
+    : '<th>Class</th><th>Species</th><th>Stage</th><th>Detections</th>';
+  
+  thead.innerHTML = `<tr>${headerCells}</tr>`;
+  console.log(`[TABLE] header HTML:`, thead.innerHTML);
   
   tbody.innerHTML  = "";
   classNames.forEach((cls, i) => {
@@ -505,6 +506,8 @@ function renderResults(data) {
     tr.innerHTML = rowHtml;
     tbody.appendChild(tr);
   });
+  
+  console.log(`[TABLE] Rendered ${classNames.length} rows, tbody HTML:`, tbody.innerHTML.substring(0, 200));
 
   // Species / stage charts
   renderBarChart("speciesChart", sr.species_summary, SPECIES_HEX, s => capitalize(s));
