@@ -43,7 +43,7 @@ OUTPUT FORMAT — Enhanced detailed analysis (follow exactly):
 - Each section on its own line in this exact form:
     1. SLIDE ASSESSMENT
     2. DETECTION QUALITY
-    3. BV FILTER EFFECT
+    3. DETECTION EVALUATION
     4. CLINICAL VERDICT
     5. RECOMMENDATIONS (Optional: add if relevant)
 - Write 5-8 detailed sentences per section, explaining:
@@ -51,7 +51,7 @@ OUTPUT FORMAT — Enhanced detailed analysis (follow exactly):
   * Numerical data (counts, percentages, confidence scores)
   * Parasites identified by species and life stage
   * Quality assessment of detections (true positive rate)
-  * Impact of BV filtering on false positives
+  * Impact of validation/filtering on detections (if applicable)
   * Confidence levels and any ambiguities
   * Recommended next steps for clinical decision-making
 - No bullet points; use flowing narrative prose
@@ -60,7 +60,7 @@ OUTPUT FORMAT — Enhanced detailed analysis (follow exactly):
 _FALLBACK = (
     "1. SLIDE ASSESSMENT\n[Gemini API unavailable after retries]\n\n"
     "2. DETECTION QUALITY\n[N/A]\n\n"
-    "3. BV FILTER EFFECT\n[N/A]\n\n"
+    "3. DETECTION EVALUATION\n[N/A]\n\n"
     "4. CLINICAL VERDICT\n[N/A]"
 )
 
@@ -124,7 +124,8 @@ def build_annotated_image(img_bgr: np.ndarray,
 def build_prompt(yolo_result: dict,
                  slide_record: dict,
                  img_ann: np.ndarray,
-                 pipeline_name: str = "") -> list:
+                 pipeline_name: str = "",
+                 uses_bv: bool = True) -> list:
     """
     Build the Gemini parts list [prompt_text, image_dict].
     Mirrors notebook's build_prompt() exactly.
@@ -170,17 +171,27 @@ The ground-truth label is INFECTED but YOLO detected ZERO parasites.
 No boxes appear in the image. In section 2 (DETECTION QUALITY), focus
 on what early-stage or low-density infection features YOLO likely missed
 and why (small ring size, low contrast, sparse parasitaemia).
-In section 3 (BV FILTER EFFECT), note that BV had no crops to evaluate.
+In section 3 (DETECTION EVALUATION), note any validation system performance.
 In section 4 (CLINICAL VERDICT), flag this as a missed diagnosis requiring
 manual microscopist review.\n"""
+
+    # Conditionally format section 3 based on whether BV is used
+    if uses_bv:
+        section3_desc = f"— {raw_count} raw detections reduced to {validated_count} kept by Binary Validator.\n   {'Validator had no crops to evaluate — YOLO found nothing.' if is_fn else 'Describe filtering appropriateness, types of detections removed vs retained, and BV confidence scores.'}"
+    else:
+        section3_desc = f"— all {validated_count} YOLO detections reported without additional validation.\n   {'No detections to evaluate.' if is_fn else 'Comment on detection confidence distribution and any borderline cases needing verification.'}"
+    
+    # Summary line for detection info (conditional BV info)
+    if uses_bv:
+        det_summary = f"Raw YOLO detections      : {raw_count}\nBV-validated (kept)      : {validated_count}\nBV threshold             : {BV_THRESH}"
+    else:
+        det_summary = f"Total YOLO detections    : {validated_count}"
 
     prompt_text = f"""{SYSTEM_CONTEXT}
 
 --- PIPELINE: {pipeline_name} ---
 Model prediction         : {pred_slide.upper()}
-Raw YOLO detections      : {raw_count}
-BV-validated (kept)      : {validated_count}
-BV threshold             : {BV_THRESH}
+{det_summary}
 Species detected (kept)  : {species_str}
 Life stages (kept)       : {stage_str}
 
@@ -196,9 +207,7 @@ Per-detection breakdown:
    Note missed regions, misclassifications, or unexpected findings.
    {"Focus on what was MISSED and why — this is a false negative case." if is_fn else ""}
 
-3. BV FILTER EFFECT — {raw_count} raw detections reduced to {validated_count} kept.
-   {"BV received no crops to evaluate — YOLO found nothing." if is_fn else
-    "Was this filtering appropriate? What types of detections were likely removed vs retained?"}
+3. DETECTION EVALUATION {section3_desc}
 
 4. CLINICAL VERDICT — is the slide-level prediction ({pred_slide.upper()}) reliable?
    {"IMPORTANT: flag this as a false negative requiring urgent manual review." if is_fn else
@@ -288,10 +297,11 @@ def _parse_sections(text: str) -> dict:
     section_map = {
         "1. SLIDE ASSESSMENT":  "slide_assessment",
         "2. DETECTION QUALITY": "detection_quality",
-        "3. BV FILTER EFFECT":  "bv_filter_effect",
+        "3. DETECTION EVALUATION":  "detection_evaluation",
+        "3. BV FILTER EFFECT":  "detection_evaluation",  # Legacy mapping for backwards compatibility
         "4. CLINICAL VERDICT":  "clinical_verdict",
     }
-    result  = {v: "" for v in section_map.values()}
+    result  = {v: "" for v in set(section_map.values())}
     current = None
 
     for line in text.splitlines():

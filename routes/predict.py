@@ -484,6 +484,7 @@ def generate_xai_report():
         slide_report = data.get("slide_report", data.get("slide_record", {}))  # Support both names
         detections = data.get("detections", [])
         pipeline_name = data.get("pipeline_name", "Unknown")
+        uses_bv = data.get("uses_bv", True)  # Extract uses_bv flag
         image_b64 = data.get("image_b64")
         
         # Reconstruct slide_record from slide_report and detections
@@ -522,7 +523,7 @@ def generate_xai_report():
             img_ann = np.zeros((960, 960, 3), dtype=np.uint8)
         
         # Build prompt and get Gemini explanation
-        parts = build_prompt(yolo_result, slide_record, img_ann, pipeline_name)
+        parts = build_prompt(yolo_result, slide_record, img_ann, pipeline_name, uses_bv=uses_bv)
         result = gemini_explain(parts)
         
         if not result:
@@ -530,7 +531,7 @@ def generate_xai_report():
         
         # Format the report text for download
         report_text = _format_report_for_download(
-            slide_record, yolo_result, result, pipeline_name, detections
+            slide_record, yolo_result, result, pipeline_name, detections, uses_bv=uses_bv
         )
         
         return jsonify({
@@ -546,7 +547,7 @@ def generate_xai_report():
 
 def _format_report_for_download(slide_record: dict, yolo_result: dict, 
                                 gemini_result: dict, pipeline_name: str, 
-                                detections: list = None) -> str:
+                                detections: list = None, uses_bv: bool = True) -> str:
     """
     Format the report as downloadable text with metadata and detailed analysis.
     """
@@ -566,7 +567,8 @@ def _format_report_for_download(slide_record: dict, yolo_result: dict,
         "─" * 80,
         "",
         f"Raw detections: {slide_record.get('raw_count', 0)}",
-        f"BV-validated: {slide_record.get('validated_count', 0)}",
+        (f"BV-validated: {slide_record.get('validated_count', 0)}" if uses_bv 
+         else f"Total detections: {slide_record.get('validated_count', 0)}"),
         f"Slide verdict: {slide_record.get('slide_verdict', 'unknown')}",
         "",
     ]
@@ -597,13 +599,18 @@ def _format_report_for_download(slide_record: dict, yolo_result: dict,
         ])
         
         for idx, det in enumerate(detections, 1):
-            bv_status = "✓ KEPT" if det.get("bv_kept") else "✗ FILTERED"
             lines.append(f"Detection #{idx}:")
             lines.append(f"  Class: {det.get('class_name', 'unknown')}")
             lines.append(f"  YOLO confidence: {det.get('yolo_conf', 0):.4f}")
-            lines.append(f"  BV status: {bv_status}")
-            if det.get("bv_conf") is not None:
-                lines.append(f"  BV confidence: {det.get('bv_conf', 0):.4f}")
+            
+            if uses_bv:
+                bv_status = "✓ KEPT" if det.get("bv_kept") else "✗ FILTERED"
+                lines.append(f"  BV status: {bv_status}")
+                if det.get("bv_conf") is not None:
+                    lines.append(f"  BV confidence: {det.get('bv_conf', 0):.4f}")
+            else:
+                lines.append(f"  Status: ✓ (YOLO detection)")
+            
             lines.append(f"  Box: {det.get('box_xyxy', [])}")
             lines.append("")
     
@@ -620,7 +627,7 @@ def _format_report_for_download(slide_record: dict, yolo_result: dict,
         section_defs = [
             ("slide_assessment", "1. SLIDE ASSESSMENT"),
             ("detection_quality", "2. DETECTION QUALITY"),
-            ("bv_filter_effect", "3. BV FILTER EFFECT"),
+            ("detection_evaluation", "3. DETECTION EVALUATION"),
             ("clinical_verdict", "4. CLINICAL VERDICT"),
         ]
         

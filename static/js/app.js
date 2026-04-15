@@ -270,6 +270,7 @@ async function generateXaiReport() {
       slide_report: lastResponse.slide_report || {},
       detections: lastResponse.detections || [],
       pipeline_name: lastResponse.pipeline_name || "Unknown",
+      uses_bv: lastResponse.uses_bv || false,
       image_b64: lastResponse.images?.annotated || null,
     };
 
