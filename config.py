@@ -4,6 +4,10 @@ All thresholds, paths and constants extracted verbatim from the notebook.
 """
 import os
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 BASE_DIR    = Path(__file__).resolve().parent
 WEIGHTS_DIR = BASE_DIR / "weights"
