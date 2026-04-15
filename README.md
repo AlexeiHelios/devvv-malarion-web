@@ -195,3 +195,4 @@ malarion/
 # Single worker required — GPU models are not thread-safe
 gunicorn -w 1 -b 0.0.0.0:5000 --timeout 120 app:app
 ```
+# devvv-malarion-fyp
