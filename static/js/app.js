@@ -382,6 +382,10 @@ function renderResults(data) {
   document.getElementById("statKept").textContent   = sr.validated_count;
   document.getElementById("statSpecies").textContent =
     Object.keys(sr.species_summary || {}).length || 0;
+  
+  // Update kept label based on whether BV filtering is used
+  const keptLabel = document.getElementById("keptLabel");
+  keptLabel.textContent = data.uses_bv ? "Kept (BV)" : "Detections";
 
   // Threshold chips
   const threshRow = document.getElementById("threshRow");
