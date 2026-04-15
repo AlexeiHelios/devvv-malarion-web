@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>MALARION — Malaria Detection System</title>
+<link rel="stylesheet" href="/static/css/style.css"/>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════ HEADER -->
+<header class="header">
+  <div class="header-inner">
+    <div class="logo">
+      <span class="logo-icon">🦟</span>
+      <div>
+        <h1>MALARION</h1>
+        <p>Malaria Parasite Detection & Explainable AI</p>
+      </div>
+    </div>
+    <div class="header-badges">
+      <span class="badge badge-teal">YOLOv8</span>
+      <span class="badge badge-purple">CBAM</span>
+      <span class="badge badge-amber">BV ResNet18</span>
+      <span class="badge badge-green">Gemini XAI</span>
+    </div>
+  </div>
+</header>
+
+<!-- ══════════════════════════════════════════════════════════ MAIN LAYOUT -->
+<main class="layout">
+
+  <!-- ═══════════════════════════════════════════ LEFT PANEL: CONTROLS -->
+  <aside class="panel panel-left">
+
+    <!-- Model selector -->
+    <section class="card">
+      <h2 class="card-title">Pipeline selection</h2>
+      <div class="model-list" id="modelList">
+        <label class="model-option selected" data-id="1">
+          <input type="radio" name="model_id" value="1"/>
+          <div class="model-info">
+            <span class="model-num">M1</span>
+            <div>
+              <strong>YOLO Baseline</strong>
+              <small>Detection only — no validator</small>
+            </div>
+          </div>
+          <span class="model-tag tag-blue">YOLO</span>
+        </label>
+        <label class="model-option" data-id="2">
+          <input type="radio" name="model_id" value="2"/>
+          <div class="model-info">
+            <span class="model-num">M2</span>
+            <div>
+              <strong>YOLO + BV</strong>
+              <small>Without hard-negative mining</small>
+            </div>
+          </div>
+          <span class="model-tag tag-teal">BV</span>
+        </label>
+        <label class="model-option" data-id="3">
+          <input type="radio" name="model_id" value="3"/>
+          <div class="model-info">
+            <span class="model-num">M3</span>
+            <div>
+              <strong>YOLO + BV (HN)</strong>
+              <small>With hard-negative mining</small>
+            </div>
+          </div>
+          <span class="model-tag tag-teal">BV·HN</span>
+        </label>
+        <label class="model-option" data-id="4">
+          <input type="radio" name="model_id" value="4"/>
+          <div class="model-info">
+            <span class="model-num">M4</span>
+            <div>
+              <strong>YOLO + CBAM</strong>
+              <small>Channel + spatial attention</small>
+            </div>
+          </div>
+          <span class="model-tag tag-purple">CBAM</span>
+        </label>
+        <label class="model-option" data-id="5">
+          <input type="radio" name="model_id" value="5"/>
+          <div class="model-info">
+            <span class="model-num">M5</span>
+            <div>
+              <strong>CBAM + BV (HN)</strong>
+              <small>Full pipeline — recommended</small>
+            </div>
+          </div>
+          <span class="model-tag tag-purple">CBAM·BV</span>
+        </label>
+      </div>
+    </section>
+
+    <!-- Thresholds -->
+    <section class="card">
+      <h2 class="card-title">Thresholds</h2>
+      <div class="slider-group">
+        <div class="slider-row">
+          <label>YOLO confidence<span id="confVal">0.25</span></label>
+          <input type="range" id="conf_thresh" min="0.05" max="0.95" step="0.05" value="0.25"
+                 oninput="document.getElementById('confVal').textContent=parseFloat(this.value).toFixed(2)"/>
+        </div>
+        <div class="slider-row">
+          <label>NMS IoU<span id="iouVal">0.45</span></label>
+          <input type="range" id="iou_thresh" min="0.05" max="0.95" step="0.05" value="0.45"
+                 oninput="document.getElementById('iouVal').textContent=parseFloat(this.value).toFixed(2)"/>
+        </div>
+        <div class="slider-row" id="bvThreshRow">
+          <label>BV threshold<span id="bvVal">0.60</span></label>
+          <input type="range" id="bv_thresh" min="0.10" max="0.95" step="0.05" value="0.60"
+                 oninput="document.getElementById('bvVal').textContent=parseFloat(this.value).toFixed(2)"/>
+        </div>
+      </div>
+    </section>
+
+    <!-- Upload -->
+    <section class="card">
+      <h2 class="card-title">Upload slide</h2>
+
+      <!-- Mode toggle -->
+      <div class="mode-toggle" id="modeToggle">
+        <button class="mode-btn active" id="modeStandard" onclick="setMode('standard')">
+          <span>🔬</span>
+          <div>
+            <strong>Standard FOV</strong>
+            <small>Single microscopy image</small>
+          </div>
+        </button>
+        <button class="mode-btn" id="modeWsi" onclick="setMode('wsi')">
+          <span>🗂️</span>
+          <div>
+            <strong>Whole Slide</strong>
+            <small>Large / stitched image</small>
+          </div>
+        </button>
+      </div>
+
+      <!-- Mode info banner -->
+      <div class="mode-info" id="modeInfo">
+        <span id="modeInfoText">Single 960×960 field-of-view image. Supports .jpg, .png, .tiff.</span>
+      </div>
+
+      <div class="dropzone" id="dropzone">
+        <div class="drop-inner" id="dropInner">
+          <span class="drop-icon" id="dropIcon">🔬</span>
+          <p id="dropText">Drag &amp; drop a slide image<br/><small>.jpg · .png · .tiff</small></p>
+          <button class="btn btn-outline" onclick="document.getElementById('fileInput').click()">
+            Choose file
+          </button>
+          <input type="file" id="fileInput" accept=".jpg,.jpeg,.png,.tiff,.tif" style="display:none"/>
+        </div>
+        <img id="previewImg" style="display:none"/>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-primary" id="analyseBtn" disabled onclick="runAnalysis()">
+          Analyze slide
+        </button>
+        <button class="btn btn-outline" id="clearBtn" disabled onclick="clearImage()" title="Remove image and upload a new one">
+          ✕
+        </button>
+      </div>
+    </section>
+
+    <!-- Legend -->
+    <section class="card card-legend">
+      <h2 class="card-title">Box colours</h2>
+      <div class="legend-grid">
+        <span class="swatch" style="background:#00c800"></span><span>BV-confirmed parasite</span>
+        <span class="swatch" style="background:#dc1a1a"></span><span>BV-filtered (false alarm)</span>
+        <span class="swatch" style="background:#E63946"></span><span>Falciparum</span>
+        <span class="swatch" style="background:#2A9D8F"></span><span>Vivax</span>
+        <span class="swatch" style="background:#E9C46A"></span><span>Ovale</span>
+        <span class="swatch" style="background:#6A4C93"></span><span>Malariae</span>
+      </div>
+    </section>
+
+  </aside>
+
+  <!-- ════════════════════════════════════════ RIGHT PANEL: RESULTS -->
+  <section class="panel panel-right" id="resultsPanel">
+
+    <!-- Empty state -->
+    <div class="empty-state" id="emptyState">
+      <span class="empty-icon">🔬</span>
+      <h3>Ready to analyze</h3>
+      <p>Upload a blood smear slide and select a pipeline to begin.</p>
+    </div>
+
+    <!-- Loading state -->
+    <div class="loading-state" id="loadingState" style="display:none">
+      <div class="spinner"></div>
+      <p id="loadingMsg">Running pipeline…</p>
+    </div>
+
+    <!-- Results (shown after successful analysis) -->
+    <div id="resultContent" style="display:none">
+
+      <!-- Verdict banner -->
+      <div class="verdict-banner" id="verdictBanner">
+        <div class="verdict-text">
+          <span class="verdict-icon" id="verdictIcon"></span>
+          <div>
+            <h2 id="verdictTitle"></h2>
+            <p id="verdictSub"></p>
+          </div>
+        </div>
+        <div class="verdict-stats">
+          <div class="stat"><span id="statRaw">—</span><small>Raw dets</small></div>
+          <div class="stat"><span id="statKept">—</span><small>Kept (BV)</small></div>
+          <div class="stat"><span id="statSpecies">—</span><small>Species</small></div>
+        </div>
+      </div>
+
+      <!-- Threshold comparison -->
+      <div class="card" id="threshCard" style="margin-bottom:1rem">
+        <h3 class="card-title">Slide verdict at multiple thresholds</h3>
+        <div class="thresh-row" id="threshRow"></div>
+      </div>
+
+      <!-- WSI-only results block -->
+      <div id="wsiBlock" style="display:none">
+        <div class="card" style="margin-bottom:1rem">
+          <h3 class="card-title">🗂️ Whole slide analysis</h3>
+          <div class="wsi-stats" id="wsiStats"></div>
+          <div class="card-row" style="margin-top:0.75rem">
+            <div>
+              <p class="card-title" style="margin-bottom:0.4rem">Density heatmap</p>
+              <img id="imgWsiDensity" class="result-img" style="max-height:300px" alt="WSI density"/>
+            </div>
+            <div>
+              <p class="card-title" style="margin-bottom:0.4rem">Tile verdict grid
+                <small style="color:var(--text3);font-weight:400"> (number = kept dets)</small>
+              </p>
+              <img id="imgWsiGrid" class="result-img" style="max-height:300px" alt="WSI tile grid"/>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Image tabs -->
+      <div class="card img-card">
+        <div class="tab-bar">
+          <button class="tab active" data-tab="annotated">Annotated</button>
+          <button class="tab" data-tab="gradcam">YOLO GradCAM</button>
+          <button class="tab bv-only" data-tab="bvpanels">BV GradCAM panels</button>
+        </div>
+        <div class="tab-content" id="tabAnnotated">
+          <img id="imgAnnotated" class="result-img" alt="Annotated slide"/>
+        </div>
+        <div class="tab-content" id="tabGradcam" style="display:none">
+          <img id="imgGradcam" class="result-img" alt="YOLO GradCAM"/>
+        </div>
+        <div class="tab-content" id="tabBvpanels" style="display:none">
+          <div id="bvPanelGrid" class="bv-grid"></div>
+        </div>
+      </div>
+
+      <!-- Per-class breakdown -->
+      <div class="card">
+        <h3 class="card-title">Per-class detection breakdown</h3>
+        <div class="class-table-wrap">
+          <table class="class-table" id="classTable">
+            <thead>
+              <tr>
+                <th>Class</th><th>Species</th><th>Stage</th>
+                <th>Raw dets</th><th>BV-kept</th><th>BV-kept %</th>
+              </tr>
+            </thead>
+            <tbody id="classTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Species / stage summary charts -->
+      <div class="card-row">
+        <div class="card half-card">
+          <h3 class="card-title">Species breakdown</h3>
+          <div class="bar-chart" id="speciesChart"></div>
+        </div>
+        <div class="card half-card">
+          <h3 class="card-title">Life stage breakdown</h3>
+          <div class="bar-chart" id="stageChart"></div>
+        </div>
+      </div>
+
+      <!-- Detection list -->
+      <div class="card">
+        <h3 class="card-title">Individual detections</h3>
+        <div id="detectionList" class="det-list"></div>
+      </div>
+
+      <!-- Gemini XAI narrative -->
+      <div class="card gemini-card" id="geminiCard">
+        <h3 class="card-title">
+          <span>🤖</span> Gemini XAI — Clinical narrative
+        </h3>
+        <div id="geminiLoading" class="gemini-loading">
+          <div class="spinner-sm"></div>
+          <span>Generating clinical analysis via Gemini Flash…</span>
+        </div>
+        <div id="geminiResult" style="display:none">
+          <div class="gemini-section" id="gs1"></div>
+          <div class="gemini-section" id="gs2"></div>
+          <div class="gemini-section" id="gs3"></div>
+          <div class="gemini-section" id="gs4"></div>
+        </div>
+        <div id="geminiError" style="display:none" class="gemini-error"></div>
+      </div>
+
+    </div><!-- /resultContent -->
+  </section>
+
+</main>
+
+<script src="/static/js/app.js"></script>
+</body>
+</html>
