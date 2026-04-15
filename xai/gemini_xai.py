@@ -21,7 +21,7 @@ from config import (
 log = logging.getLogger(__name__)
 
 # ── System context (verbatim from notebook) ───────────────────────────
-SYSTEM_CONTEXT = """You are MALARION-XAI, a clinical AI assistant specialising
+SYSTEM_CONTEXT_WITH_BV = """You are MALARION-XAI, a clinical AI assistant specialising
 in malaria parasite detection and Explainable AI for deep-learning pipelines.
 
 The MALARION system uses a two-stage pipeline on thin blood-smear images:
@@ -36,16 +36,27 @@ In the annotated image:
   RED boxes   = detections rejected by BV (filtered as non-parasite)
   No boxes    = YOLO found nothing (possible false negative)""".strip()
 
+SYSTEM_CONTEXT_NO_BV = """You are MALARION-XAI, a clinical AI assistant specialising
+in malaria parasite detection and Explainable AI for deep-learning pipelines.
+
+The MALARION system detects parasites on thin blood-smear images using YOLOv8 models
+across 16 classes (4 species x 4 life stages):
+  Species: falciparum, vivax, ovale, malariae
+  Stages:  R=Ring, T=Trophozoite, S=Schizont, G=Gametocyte
+
+In the annotated image:
+  GREEN boxes = YOLO detections (parasite instances)
+  No boxes    = YOLO found nothing (possible false negative)""".strip()
+
 FORMAT_RULES = """
 OUTPUT FORMAT — Enhanced detailed analysis (follow exactly):
 - Begin with "1. SLIDE ASSESSMENT" — no preamble
 - Use plain text only (no markdown formatting)
-- Each section on its own line in this exact form:
+- Write EXACTLY 4 sections in this form:
     1. SLIDE ASSESSMENT
     2. DETECTION QUALITY
     3. DETECTION EVALUATION
     4. CLINICAL VERDICT
-    5. RECOMMENDATIONS (Optional: add if relevant)
 - Write 5-8 detailed sentences per section, explaining:
   * Specific findings and their clinical significance
   * Numerical data (counts, percentages, confidence scores)
@@ -55,7 +66,8 @@ OUTPUT FORMAT — Enhanced detailed analysis (follow exactly):
   * Confidence levels and any ambiguities
   * Recommended next steps for clinical decision-making
 - No bullet points; use flowing narrative prose
-- Include interpretations of visual patterns and AI confidence""".strip()
+- Include interpretations of visual patterns and AI confidence
+- Do NOT add sections beyond 4; do not add RECOMMENDATIONS or other sections""".strip()
 
 _FALLBACK = (
     "1. SLIDE ASSESSMENT\n[Gemini API unavailable after retries]\n\n"
@@ -147,7 +159,12 @@ def build_prompt(yolo_result: dict,
         cls_name = CLASS_NAMES[cls_id] if 0 <= cls_id < NC else "unknown"
         conf     = float(det_conf[i]) if i < len(det_conf) else 0.0
         kept     = flags[i] if i < len(flags) else False
-        status   = "BV-KEPT (green box)" if kept else "BV-FILTERED (red box)"
+        
+        if uses_bv:
+            status   = "BV-KEPT (green box)" if kept else "BV-FILTERED (red box)"
+        else:
+            status   = "YOLO detection" if kept else "[not shown]"
+        
         det_lines.append(
             f"    [{i}] {cls_name:<18}  yolo_conf={conf:.3f}  {status}")
 
@@ -178,8 +195,10 @@ manual microscopist review.\n"""
     # Conditionally format section 3 based on whether BV is used
     if uses_bv:
         section3_desc = f"— {raw_count} raw detections reduced to {validated_count} kept by Binary Validator.\n   {'Validator had no crops to evaluate — YOLO found nothing.' if is_fn else 'Describe filtering appropriateness, types of detections removed vs retained, and BV confidence scores.'}"
+        bv_note = ""
     else:
         section3_desc = f"— all {validated_count} YOLO detections reported without additional validation.\n   {'No detections to evaluate.' if is_fn else 'Comment on detection confidence distribution and any borderline cases needing verification.'}"
+        bv_note = "\nIMPORTANT: This model does NOT use a Binary Validator (BV). Do NOT mention BV or validation filtering in your analysis."
     
     # Summary line for detection info (conditional BV info)
     if uses_bv:
@@ -187,13 +206,13 @@ manual microscopist review.\n"""
     else:
         det_summary = f"Total YOLO detections    : {validated_count}"
 
-    prompt_text = f"""{SYSTEM_CONTEXT}
+    prompt_text = f"""{SYSTEM_CONTEXT_WITH_BV if uses_bv else SYSTEM_CONTEXT_NO_BV}
 
 --- PIPELINE: {pipeline_name} ---
 Model prediction         : {pred_slide.upper()}
 {det_summary}
 Species detected (kept)  : {species_str}
-Life stages (kept)       : {stage_str}
+Life stages (kept)       : {stage_str}{bv_note}
 
 Per-detection breakdown:
 {chr(10).join(det_lines) if det_lines else "    (no detections — blank slide)"}
@@ -300,6 +319,7 @@ def _parse_sections(text: str) -> dict:
         "3. DETECTION EVALUATION":  "detection_evaluation",
         "3. BV FILTER EFFECT":  "detection_evaluation",  # Legacy mapping for backwards compatibility
         "4. CLINICAL VERDICT":  "clinical_verdict",
+        "5. RECOMMENDATIONS": "recommendations",  # Optional extra section, not used in UI
     }
     result  = {v: "" for v in set(section_map.values())}
     current = None
