@@ -460,24 +460,43 @@ function renderResults(data) {
   const classNames = sr.class_names || [];
   const rawPc      = sr.raw_count_per_class || [];
   const valPc      = sr.validated_count_per_class || [];
+  const usesBv     = data.uses_bv === true;
+  const thead      = document.getElementById("classTableHead");
   const tbody      = document.getElementById("classTableBody");
+  
+  // Update header based on uses_bv flag
+  thead.innerHTML = `
+    <tr>
+      <th>Class</th><th>Species</th><th>Stage</th>
+      ${usesBv ? '<th>Raw dets</th><th>BV-kept</th><th>BV-kept %</th>' : '<th>Detections</th>'}
+    </tr>`;
+  
   tbody.innerHTML  = "";
   classNames.forEach((cls, i) => {
     const raw = rawPc[i] || 0;
     const val = valPc[i] || 0;
     if (raw === 0 && val === 0) return;
-    const pct     = raw > 0 ? Math.round(100 * val / raw) : 0;
     const species = cls.split("_")[0];
     const stage   = cls.split("_")[1] || "?";
     const color   = SPECIES_HEX[species] || "#888";
     const tr = document.createElement("tr");
-    tr.innerHTML = `
+    
+    let rowHtml = `
       <td><span class="species-dot" style="background:${color}"></span>${escHtml(cls)}</td>
       <td style="color:${color}">${capitalize(species)}</td>
-      <td>${STAGE_LABELS[stage] || stage}</td>
+      <td>${STAGE_LABELS[stage] || stage}</td>`;
+    
+    if (usesBv) {
+      const pct = raw > 0 ? Math.round(100 * val / raw) : 0;
+      rowHtml += `
       <td>${raw}</td>
       <td>${val}</td>
       <td>${pct}%<span class="pct-bar" style="width:${pct*0.6}px;background:${color}"></span></td>`;
+    } else {
+      rowHtml += `<td>${val}</td>`;
+    }
+    
+    tr.innerHTML = rowHtml;
     tbody.appendChild(tr);
   });
 
