@@ -17,6 +17,7 @@ Full pipeline per request:
 """
 import io
 import logging
+import time
 import traceback
 
 import cv2
