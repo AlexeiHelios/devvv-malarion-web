@@ -464,19 +464,12 @@ function renderResults(data) {
   const thead      = document.getElementById("classTableHead");
   const tbody      = document.getElementById("classTableBody");
   
-  // DEBUG: Log to see what's being received
-  console.log(`[TABLE] Pipeline: ${data.pipeline_name}`);
-  console.log(`[TABLE] data.uses_bv = ${data.uses_bv} (type: ${typeof data.uses_bv})`);
-  console.log(`[TABLE] usesBv = ${usesBv}`);
-  console.log(`[TABLE] Full data object:`, data);
-  
   // Update header based on uses_bv flag
   const headerCells = usesBv 
     ? '<th>Class</th><th>Species</th><th>Stage</th><th>Raw dets</th><th>BV-kept</th><th>BV-kept %</th>'
     : '<th>Class</th><th>Species</th><th>Stage</th><th>Detections</th>';
   
   thead.innerHTML = `<tr>${headerCells}</tr>`;
-  console.log(`[TABLE] header HTML:`, thead.innerHTML);
   
   tbody.innerHTML  = "";
   classNames.forEach((cls, i) => {
@@ -506,8 +499,6 @@ function renderResults(data) {
     tr.innerHTML = rowHtml;
     tbody.appendChild(tr);
   });
-  
-  console.log(`[TABLE] Rendered ${classNames.length} rows, tbody HTML:`, tbody.innerHTML.substring(0, 200));
 
   // Species / stage charts
   renderBarChart("speciesChart", sr.species_summary, SPECIES_HEX, s => capitalize(s));
@@ -533,12 +524,13 @@ function renderResults(data) {
       const kept    = det.bv_kept;
       const species = det.species || det.class_name?.split("_")[0] || "unknown";
       const color   = SPECIES_HEX[species] || "#888";
+      const usesBv  = data.uses_bv === true;
       div.className = "det-item " + (kept ? "det-kept" : "det-filter");
       div.innerHTML = `
         <span class="det-idx">#${det.index !== undefined ? det.index : det.tile_idx ?? ""}</span>
         <span class="det-cls" style="color:${color}">${escHtml(det.class_name)}</span>
         <span class="det-conf">YOLO ${det.yolo_conf?.toFixed(3)}</span>
-        ${det.bv_conf > 0 ? `<span class="det-conf">BV ${det.bv_conf.toFixed(3)}</span>` : ""}
+        ${usesBv && det.bv_conf > 0 ? `<span class="det-conf">BV ${det.bv_conf.toFixed(3)}</span>` : ""}
         ${det.xai_category ? `<span class="det-cat cat-${det.xai_category}">${det.xai_category}</span>` : ""}
         ${isWsi && det.tile_idx !== undefined ? `<span style="color:var(--text3);font-size:0.7rem">tile ${det.tile_idx}</span>` : ""}
         <span style="color:var(--text3);font-size:0.7rem">${kept ? "✓ kept" : "✗ filtered"}</span>`;
