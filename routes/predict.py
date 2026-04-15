@@ -486,12 +486,20 @@ def generate_xai_report():
         image_b64 = data.get("image_b64")
         
         # Reconstruct slide_record from slide_report and detections
-        # (frontend sends response data, we need internal structure)
+        # Calculate counts from detections array if not in slide_report
+        raw_count = slide_report.get("raw_count")
+        if raw_count is None:
+            raw_count = len(detections)
+        
+        validated_count = slide_report.get("validated_count")
+        if validated_count is None:
+            validated_count = sum(1 for d in detections if d.get("bv_kept", False))
+        
         slide_record = {
-            "raw_count":       slide_report.get("raw_count", 0),
-            "validated_count": slide_report.get("validated_count", 0),
-            "kept_cls":        [d.get("class_id", 0) for d in detections if d.get("bv_kept")],
-            "kept_conf":       [d.get("bv_conf", 0.0) for d in detections if d.get("bv_kept")],
+            "raw_count":       raw_count,
+            "validated_count": validated_count,
+            "kept_cls":        [d.get("class_id", 0) for d in detections if d.get("bv_kept", False)],
+            "kept_conf":       [d.get("bv_conf", 0.0) for d in detections if d.get("bv_kept", False)],
             "kept_flags":      [d.get("bv_kept", False) for d in detections],
             "slide_verdict":   slide_report.get("slide_verdict", "unknown"),
             "is_false_negative": slide_report.get("is_false_negative", False),
