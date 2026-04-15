@@ -303,9 +303,12 @@ async function generateXaiReport() {
       `;
     });
 
+    // Show buttons and report
+    geminiPrompt.style.display = "";
     geminiLoading.style.display = "none";
     geminiResult.style.display  = "";
     document.getElementById("downloadReportBtn").disabled = false;
+    generateBtn.disabled = false;
 
     if (xai.status === "no_key") {
       geminiError.textContent    = "Gemini API key not set (GEMINI_API_KEY env var). XAI narrative disabled.";
@@ -314,6 +317,7 @@ async function generateXaiReport() {
     }
   } catch (err) {
     console.error("XAI Report error:", err);
+    geminiPrompt.style.display = "";
     geminiLoading.style.display = "none";
     geminiError.textContent     = "Report generation failed: " + err.message;
     geminiError.style.display   = "";
