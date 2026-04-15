@@ -104,8 +104,7 @@ def build_annotated_image(img_bgr: np.ndarray,
     """
     Draw green/red boxes on a copy of img_bgr.
     Green = BV-kept, Red = BV-filtered.
-    Stamps FALSE NEGATIVE warning if YOLO found nothing.
-    Mirrors notebook's build_prompt() image drawing exactly.
+    No text overlays.
     """
     img_ann   = img_bgr.copy()
     boxes     = yolo_result["det_boxes_xyxy"]
@@ -116,21 +115,8 @@ def build_annotated_image(img_bgr: np.ndarray,
     for i, (x1, y1, x2, y2) in enumerate(boxes):
         kept     = kept_flags[i] if i < len(kept_flags) else False
         color    = (0, 200, 0) if kept else (0, 0, 220)
-        cls_id   = int(det_cls[i]) if i < len(det_cls) else 0
-        cls_name = CLASS_NAMES[cls_id] if 0 <= cls_id < NC else "unk"
-        conf     = float(det_conf[i]) if i < len(det_conf) else 0.0
         cv2.rectangle(img_ann,
                       (int(x1), int(y1)), (int(x2), int(y2)), color, 2)
-        cv2.putText(img_ann,
-                    f"{cls_name[:10]} {conf:.2f}",
-                    (int(x1), max(int(y1) - 5, 0)),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
-
-    if slide_record["is_false_negative"]:
-        cv2.putText(img_ann,
-                    "FALSE NEGATIVE — YOLO MISSED INFECTION",
-                    (10, 30), cv2.FONT_HERSHEY_SIMPLEX,
-                    0.7, (0, 0, 255), 2)
 
     return img_ann
 
