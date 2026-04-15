@@ -465,7 +465,10 @@ function renderResults(data) {
   const tbody      = document.getElementById("classTableBody");
   
   // DEBUG: Log to see what's being received
-  console.log(`[TABLE] Pipeline: ${data.pipeline_name}, uses_bv: ${data.uses_bv}, usesBv: ${usesBv}`);
+  console.log(`[TABLE] Pipeline: ${data.pipeline_name}`);
+  console.log(`[TABLE] data.uses_bv = ${data.uses_bv} (type: ${typeof data.uses_bv})`);
+  console.log(`[TABLE] usesBv = ${usesBv}`);
+  console.log(`[TABLE] Full data object:`, data);
   
   // Update header based on uses_bv flag
   thead.innerHTML = `
