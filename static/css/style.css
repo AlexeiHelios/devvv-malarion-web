@@ -236,6 +236,9 @@ body {
   justify-content: center; min-height: 60vh;
   color: var(--text2); text-align: center; gap: 0.75rem;
 }
+.loading-state iframe {
+  width: 100%; height: 100%; border: none;
+}
 .empty-icon { font-size: 3.5rem; opacity: 0.4; }
 .empty-state h3 { font-size: 1.1rem; color: var(--text); }
 .empty-state p  { font-size: 0.85rem; max-width: 280px; }
