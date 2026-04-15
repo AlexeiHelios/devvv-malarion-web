@@ -37,17 +37,25 @@ In the annotated image:
   No boxes    = YOLO found nothing (possible false negative)""".strip()
 
 FORMAT_RULES = """
-OUTPUT FORMAT — follow exactly, no exceptions:
-- Begin your response immediately with "1. SLIDE ASSESSMENT" — no greeting,
-  no preamble, no "Here is the analysis", no "MALARION-XAI reporting"
-- Use plain text only — no markdown bold (**text**), no headers (###)
-- Each section label on its own line, in this exact form:
+OUTPUT FORMAT — Enhanced detailed analysis (follow exactly):
+- Begin with "1. SLIDE ASSESSMENT" — no preamble
+- Use plain text only (no markdown formatting)
+- Each section on its own line in this exact form:
     1. SLIDE ASSESSMENT
     2. DETECTION QUALITY
     3. BV FILTER EFFECT
     4. CLINICAL VERDICT
-- Write 3 to 5 sentences per section, no bullet points
-- End after section 4, no closing remarks""".strip()
+    5. RECOMMENDATIONS (Optional: add if relevant)
+- Write 5-8 detailed sentences per section, explaining:
+  * Specific findings and their clinical significance
+  * Numerical data (counts, percentages, confidence scores)
+  * Parasites identified by species and life stage
+  * Quality assessment of detections (true positive rate)
+  * Impact of BV filtering on false positives
+  * Confidence levels and any ambiguities
+  * Recommended next steps for clinical decision-making
+- No bullet points; use flowing narrative prose
+- Include interpretations of visual patterns and AI confidence""".strip()
 
 _FALLBACK = (
     "1. SLIDE ASSESSMENT\n[Gemini API unavailable after retries]\n\n"

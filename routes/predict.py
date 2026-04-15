@@ -437,3 +437,183 @@ def predict_wsi():
         },
         "gemini_xai": {"status": "pending"},
     }), 200
+
+
+# ─────────────────────────────────────────────────────────────────────
+# POST /api/generate_xai_report
+# Generate detailed XAI report on demand (optional feature)
+# ─────────────────────────────────────────────────────────────────────
+
+@predict_bp.route("/api/generate_xai_report", methods=["POST"])
+def generate_xai_report():
+    """
+    Generate a detailed Gemini XAI report for the given analysis result.
+    Expects the prediction data (yolo_result, slide_record, etc) in JSON.
+    
+    Request body:
+    {
+        "yolo_result": {...},
+        "slide_record": {...},
+        "pipeline_name": "...",
+        "image_b64": "..." (optional, for context)
+    }
+    
+    Returns:
+    {
+        "status": "ok" | "error",
+        "gemini_xai": { ... detailed report ... },
+        "report_text": "Plain text version for download"
+    }
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No JSON body"}), 400
+            
+        yolo_result = data.get("yolo_result", {})
+        slide_record = data.get("slide_record", {})
+        pipeline_name = data.get("pipeline_name", "Unknown")
+        image_b64 = data.get("image_b64")
+        
+        # Reconstruct image if available
+        if image_b64:
+            import base64
+            try:
+                buf = np.frombuffer(base64.b64decode(image_b64), dtype=np.uint8)
+                img_ann = cv2.imdecode(buf, cv2.IMREAD_COLOR)
+                if img_ann is None:
+                    img_ann = np.zeros((960, 960, 3), dtype=np.uint8)
+            except Exception:
+                img_ann = np.zeros((960, 960, 3), dtype=np.uint8)
+        else:
+            img_ann = np.zeros((960, 960, 3), dtype=np.uint8)
+        
+        # Build prompt and get Gemini explanation
+        parts = build_prompt(yolo_result, slide_record, img_ann, pipeline_name)
+        result = gemini_explain(parts)
+        
+        if not result:
+            return jsonify({"error": "Gemini report generation failed"}), 500
+        
+        # Format the report text for download
+        report_text = _format_report_for_download(
+            slide_record, yolo_result, result, pipeline_name
+        )
+        
+        return jsonify({
+            "status": "ok",
+            "gemini_xai": result,
+            "report_text": report_text
+        }), 200
+        
+    except Exception as e:
+        log.error(f"XAI report generation failed: {e}\n{traceback.format_exc()}")
+        return jsonify({"error": f"Report generation failed: {e}"}), 500
+
+
+def _format_report_for_download(slide_record: dict, yolo_result: dict, 
+                                gemini_result: dict, pipeline_name: str) -> str:
+    """
+    Format the report as downloadable text with metadata and detailed analysis.
+    """
+    lines = [
+        "=" * 80,
+        "MALARION — Malaria Parasite Detection & Explainable AI Report",
+        "=" * 80,
+        "",
+        f"Pipeline: {pipeline_name}",
+        f"Generated: {time.strftime('%Y-%m-%d %H:%M:%S')}",
+        "",
+        "─" * 80,
+        "ANALYSIS SUMMARY",
+        "─" * 80,
+        "",
+        f"Raw detections: {slide_record.get('raw_count', 0)}",
+        f"BV-validated: {slide_record.get('validated_count', 0)}",
+        f"Slide verdict: {slide_record.get('slide_verdict', 'unknown')}",
+        "",
+    ]
+    
+    # Add species and stage breakdown
+    species_summary = slide_record.get('species_summary', {})
+    stage_summary = slide_record.get('stage_summary', {})
+    
+    if species_summary:
+        lines.append("Species Breakdown:")
+        for species, count in species_summary.items():
+            lines.append(f"  {species}: {count}")
+        lines.append("")
+    
+    if stage_summary:
+        lines.append("Life Stage Breakdown:")
+        for stage, count in stage_summary.items():
+            lines.append(f"  {stage}: {count}")
+        lines.append("")
+    
+    lines.extend([
+        "─" * 80,
+        "GEMINI XAI — CLINICAL ANALYSIS",
+        "─" * 80,
+        "",
+    ])
+    
+    # Add Gemini sections
+    if isinstance(gemini_result, dict):
+        for section_key in ["1. SLIDE ASSESSMENT", "2. DETECTION QUALITY", 
+                           "3. BV FILTER EFFECT", "4. CLINICAL VERDICT"]:
+            if section_key in gemini_result:
+                lines.append(section_key)
+                lines.append(gemini_result[section_key])
+                lines.append("")
+    else:
+        lines.append(str(gemini_result))
+    
+    lines.extend([
+        "─" * 80,
+        "End of Report",
+        "=" * 80,
+    ])
+    
+    return "\n".join(lines)
+
+
+# ─────────────────────────────────────────────────────────────────────
+# GET /api/download_report
+# Download the generated report as plain text
+# ─────────────────────────────────────────────────────────────────────
+
+@predict_bp.route("/api/download_report", methods=["POST"])
+def download_report():
+    """
+    Download the XAI report as a .txt file.
+    
+    Request body:
+    {
+        "report_text": "...",
+        "filename": "malarion_report.txt" (optional)
+    }
+    """
+    from flask import send_file, make_response
+    
+    try:
+        data = request.get_json()
+        if not data or "report_text" not in data:
+            return jsonify({"error": "No report_text provided"}), 400
+        
+        report_text = data["report_text"]
+        filename = data.get("filename", f"malarion_report_{time.strftime('%Y%m%d_%H%M%S')}.txt")
+        
+        # Create text file in memory
+        output = io.BytesIO()
+        output.write(report_text.encode('utf-8'))
+        output.seek(0)
+        
+        response = make_response(output.getvalue())
+        response.headers["Content-Disposition"] = f"attachment; filename={filename}"
+        response.headers["Content-Type"] = "text/plain; charset=utf-8"
+        
+        return response, 200
+        
+    except Exception as e:
+        log.error(f"Report download failed: {e}")
+        return jsonify({"error": str(e)}), 500

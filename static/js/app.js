@@ -225,48 +225,69 @@ async function runAnalysis() {
   renderResults(data);
   setView("results");
 
-  // Gemini XAI — only for standard mode (per-image narrative)
+  // Hide Gemini card for WSI mode; show prompt for standard mode
   if (currentMode === 'standard') {
-    fetchGeminiExplanation(data);
+    document.getElementById("geminiCard").style.display = "";
+    // Hide the report and show the prompt/buttons instead
+    document.getElementById("geminiPrompt").style.display = "";
+    document.getElementById("geminiLoading").style.display = "none";
+    document.getElementById("geminiResult").style.display = "none";
+    document.getElementById("geminiError").style.display = "none";
+    document.getElementById("generateReportBtn").disabled = false;
+    document.getElementById("downloadReportBtn").disabled = true;
   } else {
     // Hide Gemini card for WSI mode
     document.getElementById("geminiCard").style.display = "none";
   }
 }
 
-// ── Gemini XAI (async, called after main results render) ──────────────
-async function fetchGeminiExplanation(data) {
+// ── Generate XAI Report (on-demand) ──────────────────────────────────
+async function generateXaiReport() {
+  if (!lastResponse) {
+    alert("No analysis results available. Please run analysis first.");
+    return;
+  }
+
+  const generateBtn = document.getElementById("generateReportBtn");
   const geminiLoading = document.getElementById("geminiLoading");
   const geminiResult  = document.getElementById("geminiResult");
   const geminiError   = document.getElementById("geminiError");
+  const geminiPrompt  = document.getElementById("geminiPrompt");
 
+  generateBtn.disabled = true;
+  geminiPrompt.style.display = "none";
   geminiLoading.style.display = "";
   geminiResult.style.display  = "none";
   geminiError.style.display   = "none";
 
   try {
     const body = {
-      model_id:     data.model_id,
-      slide_report: data.slide_report,
-      detections:   data.detections,
-      image_b64:    data.images?.annotated || null,
+      yolo_result: lastResponse.yolo_result || {},
+      slide_record: lastResponse.slide_report || {},
+      pipeline_name: lastResponse.pipeline_name || "Unknown",
+      image_b64: lastResponse.images?.annotated || null,
     };
-    const res    = await fetch("/api/explain", {
+
+    const res = await fetch("/api/generate_xai_report", {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
       body:    JSON.stringify(body),
     });
+
     const result = await res.json();
     if (!res.ok) throw new Error(result.error || `HTTP ${res.status}`);
 
-    const xai      = result.gemini_xai;
-    const sections = xai.sections || {};
+    // Store report for download
+    window.currentReportText = result.report_text;
+    
+    const xai = result.gemini_xai;
+    const sections = xai.sections || xai;
 
     const sectionDefs = [
-      { id: "gs1", key: "slide_assessment",  label: "1. Slide assessment" },
-      { id: "gs2", key: "detection_quality", label: "2. Detection quality" },
-      { id: "gs3", key: "bv_filter_effect",  label: "3. BV filter effect" },
-      { id: "gs4", key: "clinical_verdict",  label: "4. Clinical verdict" },
+      { id: "gs1", key: "1. SLIDE ASSESSMENT",   label: "1. Slide Assessment" },
+      { id: "gs2", key: "2. DETECTION QUALITY",  label: "2. Detection Quality" },
+      { id: "gs3", key: "3. BV FILTER EFFECT",   label: "3. BV Filter Effect" },
+      { id: "gs4", key: "4. CLINICAL VERDICT",   label: "4. Clinical Verdict" },
     ];
 
     sectionDefs.forEach(({ id, key, label }) => {
@@ -279,6 +300,7 @@ async function fetchGeminiExplanation(data) {
 
     geminiLoading.style.display = "none";
     geminiResult.style.display  = "";
+    document.getElementById("downloadReportBtn").disabled = false;
 
     if (xai.status === "no_key") {
       geminiError.textContent    = "Gemini API key not set (GEMINI_API_KEY env var). XAI narrative disabled.";
@@ -286,9 +308,35 @@ async function fetchGeminiExplanation(data) {
       geminiResult.style.display = "none";
     }
   } catch (err) {
+    console.error("XAI Report error:", err);
     geminiLoading.style.display = "none";
-    geminiError.textContent     = "Gemini XAI failed: " + err.message;
+    geminiError.textContent     = "Report generation failed: " + err.message;
     geminiError.style.display   = "";
+    generateBtn.disabled = false;
+  }
+}
+
+// ── Download XAI Report ──────────────────────────────────────────────
+function downloadXaiReport() {
+  if (!window.currentReportText) {
+    alert("No report available. Please generate a report first.");
+    return;
+  }
+
+  try {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+    const filename = `malarion_report_${timestamp}.txt`;
+    
+    // Create blob and download
+    const blob = new Blob([window.currentReportText], { type: 'text/plain; charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(url);
+  } catch (err) {
+    alert("Download failed: " + err.message);
   }
 }
 
