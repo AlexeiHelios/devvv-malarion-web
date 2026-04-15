@@ -76,31 +76,7 @@ class GradCAM_YOLO:
         self._register()
         H, W = img_bgr.shape[:2]
 
-        # ─────────────────────────────────────────────────────────────
-        # CROP REGION: Add 20% padding around the bounding box
-        # ─────────────────────────────────────────────────────────────
-        x1, y1, x2, y2 = [int(v) for v in box_xyxy]
-        box_w = x2 - x1
-        box_h = y2 - y1
-        pad_x = int(box_w * 0.2)
-        pad_y = int(box_h * 0.2)
-        
-        # Crop with padding, clipped to image bounds
-        crop_x1 = max(0, x1 - pad_x)
-        crop_y1 = max(0, y1 - pad_y)
-        crop_x2 = min(W, x2 + pad_x)
-        crop_y2 = min(H, y2 + pad_y)
-        
-        crop_h = crop_y2 - crop_y1
-        crop_w = crop_x2 - crop_x1
-        
-        # Crop the image
-        cropped = img_bgr[crop_y1:crop_y2, crop_x1:crop_x2]
-
-        # ─────────────────────────────────────────────────────────────
-        # GRADCAM on cropped region only
-        # ─────────────────────────────────────────────────────────────
-        img_rgb = cv2.cvtColor(cropped, cv2.COLOR_BGR2RGB)
+        img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
         tensor  = _NECK_TRANSFORM(
             PILImage.fromarray(cv2.resize(img_rgb, (640, 640)))
         ).unsqueeze(0).to(self.device)
@@ -141,15 +117,22 @@ class GradCAM_YOLO:
         if cam.max() > 0:
             cam = cam / cam.max()
 
-        # ─────────────────────────────────────────────────────────────
-        # MAP CAM BACK TO ORIGINAL AND FULL IMAGE
-        # ─────────────────────────────────────────────────────────────
-        # Resize CAM to cropped region size
-        cam_crop = cv2.resize(cam.astype(np.float32), (crop_w, crop_h))
+        # Resize CAM to full image size
+        cam_full = cv2.resize(cam.astype(np.float32), (W, H))
+
+        # Crop CAM to detection box region with 20% padding
+        x1, y1, x2, y2 = [int(v) for v in box_xyxy]
+        box_w = x2 - x1
+        box_h = y2 - y1
+        pad_x = int(box_w * 0.2)
+        pad_y = int(box_h * 0.2)
         
-        # Create full-image CAM with zeros outside crop region
-        cam_full = np.zeros((H, W), dtype=np.float32)
-        cam_full[crop_y1:crop_y2, crop_x1:crop_x2] = cam_crop
+        crop_x1 = max(0, x1 - pad_x)
+        crop_y1 = max(0, y1 - pad_y)
+        crop_x2 = min(W, x2 + pad_x)
+        crop_y2 = min(H, y2 + pad_y)
+        
+        cam_crop = cam_full[crop_y1:crop_y2, crop_x1:crop_x2] if (crop_x2 > crop_x1 and crop_y2 > crop_y1) else cam_full
 
         return cam_crop, cam_full
 
