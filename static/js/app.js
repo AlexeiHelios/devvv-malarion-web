@@ -289,10 +289,10 @@ async function generateXaiReport() {
     const sections = xai.sections || xai;
 
     const sectionDefs = [
-      { id: "gs1", key: "1. SLIDE ASSESSMENT",   label: "1. Slide Assessment" },
-      { id: "gs2", key: "2. DETECTION QUALITY",  label: "2. Detection Quality" },
-      { id: "gs3", key: "3. BV FILTER EFFECT",   label: "3. BV Filter Effect" },
-      { id: "gs4", key: "4. CLINICAL VERDICT",   label: "4. Clinical Verdict" },
+      { id: "gs1", key: "slide_assessment",  label: "1. Slide Assessment" },
+      { id: "gs2", key: "detection_quality", label: "2. Detection Quality" },
+      { id: "gs3", key: "bv_filter_effect",  label: "3. BV Filter Effect" },
+      { id: "gs4", key: "clinical_verdict",  label: "4. Clinical Verdict" },
     ];
 
     sectionDefs.forEach(({ id, key, label }) => {
