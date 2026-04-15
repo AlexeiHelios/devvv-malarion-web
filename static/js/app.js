@@ -464,6 +464,9 @@ function renderResults(data) {
   const thead      = document.getElementById("classTableHead");
   const tbody      = document.getElementById("classTableBody");
   
+  // DEBUG: Log to see what's being received
+  console.log(`[TABLE] Pipeline: ${data.pipeline_name}, uses_bv: ${data.uses_bv}, usesBv: ${usesBv}`);
+  
   // Update header based on uses_bv flag
   thead.innerHTML = `
     <tr>
