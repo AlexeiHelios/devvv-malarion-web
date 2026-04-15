@@ -262,8 +262,13 @@ async function generateXaiReport() {
 
   try {
     const body = {
-      yolo_result: lastResponse.yolo_result || {},
-      slide_record: lastResponse.slide_report || {},
+      yolo_result: lastResponse.yolo_result || {
+        det_boxes_xyxy: [],
+        det_cls: [],
+        det_conf: []
+      },
+      slide_report: lastResponse.slide_report || {},
+      detections: lastResponse.detections || [],
       pipeline_name: lastResponse.pipeline_name || "Unknown",
       image_b64: lastResponse.images?.annotated || null,
     };

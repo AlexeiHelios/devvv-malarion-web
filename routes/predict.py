@@ -207,6 +207,14 @@ def predict():
         "uses_bv":       uses_bv,
         "uses_cbam":     uses_cbam,
 
+        # YOLO inference results (for XAI report generation)
+        "yolo_result": {
+            "det_boxes_xyxy": [d.tolist() if hasattr(d, 'tolist') else d for d in yolo_result.get("det_boxes_xyxy", [])],
+            "det_cls":        [int(c) if hasattr(c, '__int__') else c for c in yolo_result.get("det_cls", [])],
+            "det_conf":       [float(c) if hasattr(c, '__float__') else c for c in yolo_result.get("det_conf", [])],
+            "crops":          [],
+        },
+
         # Slide-level report
         "slide_report": {
             "slide_verdict":              slide_record["slide_verdict"],
@@ -448,12 +456,13 @@ def predict_wsi():
 def generate_xai_report():
     """
     Generate a detailed Gemini XAI report for the given analysis result.
-    Expects the prediction data (yolo_result, slide_record, etc) in JSON.
+    Expects the prediction data in JSON.
     
     Request body:
     {
         "yolo_result": {...},
-        "slide_record": {...},
+        "slide_report": {...},  (or slide_record)
+        "detections": [...],
         "pipeline_name": "...",
         "image_b64": "..." (optional, for context)
     }
@@ -471,9 +480,24 @@ def generate_xai_report():
             return jsonify({"error": "No JSON body"}), 400
             
         yolo_result = data.get("yolo_result", {})
-        slide_record = data.get("slide_record", {})
+        slide_report = data.get("slide_report", data.get("slide_record", {}))  # Support both names
+        detections = data.get("detections", [])
         pipeline_name = data.get("pipeline_name", "Unknown")
         image_b64 = data.get("image_b64")
+        
+        # Reconstruct slide_record from slide_report and detections
+        # (frontend sends response data, we need internal structure)
+        slide_record = {
+            "raw_count":       slide_report.get("raw_count", 0),
+            "validated_count": slide_report.get("validated_count", 0),
+            "kept_cls":        [d.get("class_id", 0) for d in detections if d.get("bv_kept")],
+            "kept_conf":       [d.get("bv_conf", 0.0) for d in detections if d.get("bv_kept")],
+            "kept_flags":      [d.get("bv_kept", False) for d in detections],
+            "slide_verdict":   slide_report.get("slide_verdict", "unknown"),
+            "is_false_negative": slide_report.get("is_false_negative", False),
+            "species_summary": slide_report.get("species_summary", {}),
+            "stage_summary":   slide_report.get("stage_summary", {}),
+        }
         
         # Reconstruct image if available
         if image_b64:
