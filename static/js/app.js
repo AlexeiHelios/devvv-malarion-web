@@ -25,6 +25,7 @@ function initializeBackgroundAnimation() {
   
   const ctx = canvas.getContext('2d');
   const particles = [];
+  let time = 0;
   
   function resizeCanvas() {
     canvas.width = window.innerWidth;
@@ -35,10 +36,11 @@ function initializeBackgroundAnimation() {
     constructor() {
       this.x = Math.random() * canvas.width;
       this.y = Math.random() * canvas.height;
-      this.size = Math.random() * 2 + 0.5;
-      this.speedX = (Math.random() - 0.5) * 0.5;
-      this.speedY = (Math.random() - 0.5) * 0.5;
-      this.opacity = Math.random() * 0.5 + 0.2;
+      this.size = Math.random() * 3 + 1;
+      this.speedX = (Math.random() - 0.5) * 0.8;
+      this.speedY = (Math.random() - 0.5) * 0.8;
+      this.opacity = Math.random() * 0.6 + 0.3;
+      this.color = ['#6c5ce7', '#a29bfe', '#8e7fd1', '#9d8ee2'][Math.floor(Math.random() * 4)];
     }
     
     update() {
@@ -51,28 +53,47 @@ function initializeBackgroundAnimation() {
     }
     
     draw() {
-      ctx.fillStyle = `rgba(108, 92, 231, ${this.opacity})`;
+      ctx.fillStyle = this.color;
+      ctx.globalAlpha = this.opacity;
       ctx.beginPath();
       ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
       ctx.fill();
+      ctx.globalAlpha = 1;
     }
   }
   
   function init() {
     resizeCanvas();
     particles.length = 0;
-    for (let i = 0; i < 60; i++) {
+    for (let i = 0; i < 80; i++) {
       particles.push(new Particle());
     }
   }
   
   function animate() {
-    // Gradient background
+    time += 0.002;
+    
+    // Dynamic gradient background
     const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-    gradient.addColorStop(0, '#0a0e17');
-    gradient.addColorStop(0.5, '#1a1f2e');
-    gradient.addColorStop(1, '#0f1117');
+    gradient.addColorStop(0, '#0a0c14');
+    gradient.addColorStop(0.3, '#151a28');
+    gradient.addColorStop(0.6, '#1a1f2e');
+    gradient.addColorStop(1, '#0f1220');
     ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Add subtle animated glow
+    const glowGradient = ctx.createRadialGradient(
+      canvas.width * 0.5 + Math.sin(time) * 100,
+      canvas.height * 0.5 + Math.cos(time) * 100,
+      0,
+      canvas.width * 0.5,
+      canvas.height * 0.5,
+      Math.max(canvas.width, canvas.height)
+    );
+    glowGradient.addColorStop(0, 'rgba(108, 92, 231, 0.05)');
+    glowGradient.addColorStop(1, 'rgba(108, 92, 231, 0)');
+    ctx.fillStyle = glowGradient;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
     // Update and draw particles
