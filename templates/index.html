@@ -8,8 +8,26 @@
 </head>
 <body>
 
+<!-- ═══════════════════════════════════════════════════════════ COVER PAGE -->
+<div id="coverPage" class="cover-page">
+  <iframe src='https://prod.spline.design/V5CGbtfeIxsOFbYP/scene.splinecode' 
+          class="spline-iframe"
+          frameborder='0' 
+          allow='xr-spatial-tracking' 
+          allowfullscreen>
+  </iframe>
+  <div class="cover-overlay">
+    <div class="cover-content">
+      <span class="cover-icon">🦟</span>
+      <h1>MALARION</h1>
+      <p>Malaria Parasite Detection & Explainable AI</p>
+      <button class="btn btn-primary" id="startBtn" onclick="startApp()">Start analyzing</button>
+    </div>
+  </div>
+</div>
+
 <!-- ═══════════════════════════════════════════════════════════ HEADER -->
-<header class="header">
+<header class="header" id="appHeader" style="display:none;">
   <div class="header-inner">
     <div class="logo">
       <span class="logo-icon">🦟</span>
@@ -28,7 +46,7 @@
 </header>
 
 <!-- ══════════════════════════════════════════════════════════ MAIN LAYOUT -->
-<main class="layout">
+<main class="layout" id="appMain" style="display:none;">
 
   <!-- ═══════════════════════════════════════════ LEFT PANEL: CONTROLS -->
   <aside class="panel panel-left">

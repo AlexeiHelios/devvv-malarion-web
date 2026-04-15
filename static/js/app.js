@@ -7,6 +7,17 @@ let selectedFile  = null;
 let lastResponse  = null;
 let currentMode   = 'standard';   // 'standard' | 'wsi'
 
+// ─────── Cover page handler ────────
+function startApp() {
+  const coverPage = document.getElementById('coverPage');
+  const appHeader = document.getElementById('appHeader');
+  const appMain = document.getElementById('appMain');
+  
+  coverPage.style.display = 'none';
+  appHeader.style.display = 'block';
+  appMain.style.display = 'grid';
+}
+
 // ── Mode switcher ─────────────────────────────────────────────────────
 function setMode(mode) {
   currentMode = mode;
