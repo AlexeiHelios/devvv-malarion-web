@@ -288,11 +288,12 @@ async function generateXaiReport() {
     
     const xai = result.gemini_xai;
     const sections = xai.sections || xai;
+    const usesBv = lastResponse.uses_bv === true;
 
     const sectionDefs = [
       { id: "gs1", key: "slide_assessment",  label: "1. Slide Assessment" },
       { id: "gs2", key: "detection_quality", label: "2. Detection Quality" },
-      { id: "gs3", key: "bv_filter_effect",  label: "3. BV Filter Effect" },
+      { id: "gs3", key: "detection_evaluation",  label: usesBv ? "3. BV Filter Effect" : "3. Detection Evaluation" },
       { id: "gs4", key: "clinical_verdict",  label: "4. Clinical Verdict" },
     ];
 
