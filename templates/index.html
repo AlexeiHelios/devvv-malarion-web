@@ -8,6 +8,23 @@
 </head>
 <body>
 
+<!-- ═══════════════════════════════════════════════════════════ TOP NAVBAR -->
+<nav class="top-nav" id="topNav">
+  <div class="nav-container">
+    <div class="nav-logo" onclick="scrollToCover()">
+      <span class="nav-logo-text">MALARION</span>
+    </div>
+    <ul class="nav-menu">
+      <li><a href="#home" onclick="scrollToCover(); return false;">Home</a></li>
+      <li><a href="#analyze" onclick="startApp(); return false;">Analyze Tool</a></li>
+      <li><a href="#performance" onclick="scrollToSection('performance'); return false;">Model Performance</a></li>
+      <li><a href="#howitworks" onclick="scrollToSection('howItWorks'); return false;">How it Works</a></li>
+      <li><a href="#researchers" onclick="scrollToSection('researchers'); return false;">Author Details</a></li>
+    </ul>
+    <button class="nav-toggle" id="navToggle" onclick="toggleNavMenu()">☰</button>
+  </div>
+</nav>
+
 <!-- ═══════════════════════════════════════════════════════════ COVER PAGE -->
 <div id="coverPage" class="cover-page">
   <canvas id="bgCanvas" class="bg-canvas"></canvas>
@@ -17,6 +34,394 @@
       <h1>MALARION</h1>
       <p>Malaria Parasite Detection & Explainable AI</p>
       <button class="btn btn-primary" id="startBtn" onclick="startApp()">Start analyzing</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ PERFORMANCE PAGE -->
+<div id="performancePage" class="performance-page" style="display:none;">
+  <div class="perf-container">
+    <!-- Header -->
+    <div class="perf-header">
+      <h1>Pipeline Ablation Study</h1>
+      <p>Model Performance Comparison on Test Split (42 images)</p>
+    </div>
+
+    <!-- Table Section -->
+    <div class="perf-card perf-full">
+      <h3>Detailed Results Table</h3>
+      <div class="table-wrapper">
+        <table class="perf-table">
+          <thead>
+            <tr>
+              <th>Metric</th>
+              <th>YOLO only</th>
+              <th>YOLO + BV</th>
+              <th>YOLO + BV (HN)</th>
+              <th>YOLO + CBAM</th>
+              <th>YOLO + CBAM + BV (HN)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="metric-name">Precision</td>
+              <td>0.9263</td>
+              <td>0.9370</td>
+              <td>0.9366</td>
+              <td>0.9242</td>
+              <td>0.9370</td>
+            </tr>
+            <tr>
+              <td class="metric-name">Recall</td>
+              <td>0.9506</td>
+              <td>0.9506</td>
+              <td>0.9448</td>
+              <td>0.9564</td>
+              <td>0.9506</td>
+            </tr>
+            <tr>
+              <td class="metric-name">F1 Score</td>
+              <td>0.9383</td>
+              <td>0.9437</td>
+              <td>0.9407</td>
+              <td>0.9400</td>
+              <td>0.9437</td>
+            </tr>
+            <tr>
+              <td class="metric-name">MAE ↓</td>
+              <td>0.5952</td>
+              <td>0.5000</td>
+              <td>0.5000</td>
+              <td>0.5714</td>
+              <td>0.4048</td>
+            </tr>
+            <tr>
+              <td class="metric-name">Pearson r</td>
+              <td>0.9966</td>
+              <td>0.9963</td>
+              <td>0.9961</td>
+              <td>0.9977</td>
+              <td>0.9973</td>
+            </tr>
+            <tr class="count-row">
+              <td class="metric-name">True Positives</td>
+              <td>327</td>
+              <td>327</td>
+              <td>325</td>
+              <td>329</td>
+              <td>327</td>
+            </tr>
+            <tr class="count-row">
+              <td class="metric-name">False Positives</td>
+              <td>26</td>
+              <td>22 (+15.4%)</td>
+              <td>22 (+15.4%)</td>
+              <td>27</td>
+              <td>22 (+15.4%)</td>
+            </tr>
+            <tr class="count-row">
+              <td class="metric-name">False Negatives</td>
+              <td>17</td>
+              <td>17</td>
+              <td>19</td>
+              <td>15</td>
+              <td>17</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Model Size Comparison Table -->
+    <div class="perf-card perf-full">
+      <h3>YOLO Model Size Ablation Study</h3>
+      <div class="table-wrapper">
+        <table class="perf-table">
+          <thead>
+            <tr>
+              <th>Metric</th>
+              <th>YOLOv8n-seg (Nano)</th>
+              <th>YOLOv8s-seg (Small)</th>
+              <th>YOLOv8m-seg (Medium)</th>
+              <th>YOLOv8m-seg+OS (Medium+Oversampling)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="metric-name">Params</td>
+              <td>3.3M</td>
+              <td>11.8M</td>
+              <td>27.2M</td>
+              <td>27.2M</td>
+            </tr>
+            <tr>
+              <td class="metric-name">Precision</td>
+              <td>0.9106</td>
+              <td>0.9213</td>
+              <td>0.9263</td>
+              <td>0.9302</td>
+            </tr>
+            <tr>
+              <td class="metric-name">Recall</td>
+              <td>0.9477</td>
+              <td>0.9535</td>
+              <td>0.9506</td>
+              <td>0.9680</td>
+            </tr>
+            <tr>
+              <td class="metric-name">F1 Score</td>
+              <td>0.9288</td>
+              <td>0.9371</td>
+              <td>0.9383</td>
+              <td>0.9487</td>
+            </tr>
+            <tr>
+              <td class="metric-name">MAE ↓</td>
+              <td>0.7143</td>
+              <td>0.6667</td>
+              <td>0.5952</td>
+              <td>0.5238</td>
+            </tr>
+            <tr>
+              <td class="metric-name">Pearson r</td>
+              <td>0.9952</td>
+              <td>0.9970</td>
+              <td>0.9966</td>
+              <td>0.9959</td>
+            </tr>
+            <tr>
+              <td class="metric-name">mAP@50 Box</td>
+              <td>0.8609</td>
+              <td>0.8801</td>
+              <td>0.8842</td>
+              <td>0.8754</td>
+            </tr>
+            <tr>
+              <td class="metric-name">mAP@50-95 Box</td>
+              <td>0.6817</td>
+              <td>0.6729</td>
+              <td>0.6924</td>
+              <td>0.7127</td>
+            </tr>
+            <tr>
+              <td class="metric-name">mAP@50 Mask</td>
+              <td>0.8595</td>
+              <td>0.8799</td>
+              <td>0.8843</td>
+              <td>0.8741</td>
+            </tr>
+            <tr>
+              <td class="metric-name">mAP@50-95 Msk</td>
+              <td>0.5783</td>
+              <td>0.5748</td>
+              <td>0.5827</td>
+              <td>0.6424</td>
+            </tr>
+            <tr class="count-row">
+              <td class="metric-name">True Positives</td>
+              <td>326</td>
+              <td>328</td>
+              <td>327</td>
+              <td>333</td>
+            </tr>
+            <tr class="count-row">
+              <td class="metric-name">False Positives</td>
+              <td>32</td>
+              <td>28</td>
+              <td>26</td>
+              <td>25</td>
+            </tr>
+            <tr class="count-row">
+              <td class="metric-name">False Negatives</td>
+              <td>18</td>
+              <td>16</td>
+              <td>17</td>
+              <td>11</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ HOW IT WORKS PAGE -->
+<div id="howItWorksPage" class="how-it-works-page" style="display:none;">
+  <div class="hiw-container">
+    <!-- intro -->
+    <section class="hiw-intro">
+      <h1>How the System Works</h1>
+      <p class="hiw-intro-text">MALARION is a two-stage deep learning pipeline that analyses thin blood-smear microscopy images to detect, classify, and validate malaria parasites across four species and four life stages. Every decision made by the system is backed by explainable AI, giving clinicians and researchers a transparent view of what the model has learned.</p>
+    </section>
+
+    <!-- Stage 1 -->
+    <section class="hiw-stage">
+      <div class="hiw-stage-badge">Stage 1</div>
+      <h2>Detection & Segmentation (YOLOv8m-seg + CBAM)</h2>
+      <div class="hiw-stage-content">
+        <p>When a blood-smear image is submitted, it is first processed by a <strong>YOLOv8m-seg model</strong> — a state-of-the-art instance segmentation network that draws a precise boundary around each detected parasite region at the pixel level. The model is trained to recognise 16 distinct classes, formed by the combination of 4 malaria species and 4 parasite life stages:</p>
+        
+        <div class="species-grid">
+          <div class="species-card">
+            <h4>P. falciparum</h4>
+            <ul><li>Ring (R)</li><li>Trophozoite (T)</li><li>Schizont (S)</li><li>Gametocyte (G)</li></ul>
+          </div>
+          <div class="species-card">
+            <h4>P. vivax</h4>
+            <ul><li>Ring (R)</li><li>Trophozoite (T)</li><li>Schizont (S)</li><li>Gametocyte (G)</li></ul>
+          </div>
+          <div class="species-card">
+            <h4>P. ovale</h4>
+            <ul><li>Ring (R)</li><li>Trophozoite (T)</li><li>Schizont (S)</li><li>Gametocyte (G)</li></ul>
+          </div>
+          <div class="species-card">
+            <h4>P. malariae</h4>
+            <ul><li>Ring (R)</li><li>Trophozoite (T)</li><li>Schizont (S)</li><li>Gametocyte (G)</li></ul>
+          </div>
+        </div>
+
+        <p>To sharpen detection accuracy, the backbone of YOLOv8 is enhanced with a <strong>CBAM (Convolutional Block Attention Module)</strong>, injected at the neck output — the point where the network fuses multi-scale features before passing them to the detection head. CBAM operates in two sequential steps:</p>
+
+        <div class="attention-steps">
+          <div class="attention-step">
+            <span class="step-label">Channel Attention</span>
+            <p>learns which feature channels carry the most diagnostic signal, suppressing irrelevant channels (e.g. background texture).</p>
+          </div>
+          <div class="attention-step">
+            <span class="step-label">Spatial Attention</span>
+            <p>learns where in the feature map to focus, directing the model toward intracellular structures like the parasite's chromatin dot and cytoplasm ring rather than surrounding red blood cell debris.</p>
+          </div>
+        </div>
+
+        <p>The YOLO backbone is kept frozen during training to preserve generalised visual features, while only the CBAM module and the detection head are fine-tuned on the malaria dataset. This approach achieves an mAP@50 of <strong>0.9364</strong> — a <strong>4.4 percentage-point improvement</strong> over the baseline model without CBAM.</p>
+      </div>
+    </section>
+
+    <!-- Stage 2 -->
+    <section class="hiw-stage">
+      <div class="hiw-stage-badge">Stage 2</div>
+      <h2>Binary Validation (ResNet18 Binary Validator)</h2>
+      <div class="hiw-stage-content">
+        <p>Every bounding box produced by Stage 1 is not immediately accepted as a confirmed detection. Instead, each detected crop is passed to a separate <strong>Binary Validator (BV)</strong> — a ResNet18 network with a custom two-layer classification head — which independently re-examines the cropped region and outputs a confidence score between 0 and 1.</p>
+
+        <p>The BV was trained specifically on the kinds of errors YOLO makes: staining artifacts, overlapping red blood cell boundaries, and cellular debris that can mimic ring-stage parasites. It was further hardened through a <strong>hard-negative retraining phase</strong>, where the most difficult false positives collected from YOLO's outputs were added back into the training set to make the validator more discriminating.</p>
+
+        <p>The operating threshold for the BV is calibrated with a <strong>recall floor of 0.97</strong> — meaning the system is designed to accept a small drop in precision rather than risk missing a real parasite, which is far more clinically dangerous than a false alarm.</p>
+
+        <p>The result of this stage is clearly annotated on the output image:</p>
+
+        <div class="validation-results">
+          <div class="validation-item">
+            <span class="result-box result-confirmed">🟢</span>
+            <strong>Green boxes</strong> — detections confirmed by the Binary Validator (true parasite)
+          </div>
+          <div class="validation-item">
+            <span class="result-box result-rejected">🔴</span>
+            <strong>Red boxes</strong> — detections rejected by the Binary Validator (filtered as non-parasite)
+          </div>
+          <div class="validation-item">
+            <span class="result-box result-none">—</span>
+            <strong>No boxes</strong> — YOLO found nothing in the image (possible false negative)
+          </div>
+        </div>
+
+        <p>A slide is classified as <strong>infected if at least one detection passes validation</strong>.</p>
+      </div>
+    </section>
+
+    <!-- Why Two-Stage -->
+    <section class="hiw-stage hiw-why">
+      <h2>Why a Two-Stage Pipeline?</h2>
+      <div class="hiw-stage-content">
+        <p>The two stages serve complementary purposes. <strong>YOLO+CBAM</strong> is optimised for <strong>recall</strong> — it is designed to catch every possible parasite, even in low-density or ambiguous slides. The <strong>Binary Validator</strong> then improves <strong>precision</strong> by filtering out false positives, without undermining the sensitivity the first stage provides. Together, they address the core clinical requirement: <strong>missing a malaria-positive slide is unacceptable</strong>, but unnecessary false alarms must also be minimised.</p>
+      </div>
+    </section>
+
+    <!-- Explainability -->
+    <section class="hiw-stage">
+      <h2>Explainability — Grad-CAM Visualisation</h2>
+      <div class="hiw-stage-content">
+        <p>MALARION integrates <strong>Gradient-weighted Class Activation Mapping (Grad-CAM)</strong> at both pipeline stages, generating heatmap overlays that reveal what each model focused on when making its decision:</p>
+
+        <div class="gradcam-steps">
+          <div class="gradcam-step">
+            <h4>YOLO+CBAM Grad-CAM</h4>
+            <p>(applied at the neck layer) shows which regions of the full slide drove the detection, confirming whether activation is concentrated on the parasite cell body or misfiring on background structures.</p>
+          </div>
+          <div class="gradcam-step">
+            <h4>BV Grad-CAM</h4>
+            <p>(applied at ResNet18's layer4) shows what features within the cropped detection caused acceptance or rejection — for confirmed parasites, activation concentrates tightly over the chromatin dot and cytoplasm ring; for rejected crops, activation is diffuse or background-dominant.</p>
+          </div>
+        </div>
+
+        <p>Cases are categorised into four explainability classes — <strong>True Positives, False Positives, BV-Filtered, and Hard Cases</strong> — each with its own visual interpretation, giving users the ability to audit and trust the model's reasoning rather than treat it as a black box.</p>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ RESEARCHERS PAGE -->
+<div id="researchersPage" class="researchers-page" style="display:none;">
+  <div class="researchers-container">
+    <div class="author-card">
+      <!-- Status Badge -->
+      <div class="status-badge">Completed 2026</div>
+
+      <!-- Avatar & Header Info -->
+      <div class="author-header">
+        <div class="author-avatar">DR</div>
+        <div class="author-info">
+          <h1 class="author-name">Dev Ranasinghe</h1>
+          <p class="author-title">Lead Developer & Researcher — MALARION</p>
+        </div>
+      </div>
+
+      <!-- Main Content -->
+      <div class="author-content">
+        <!-- Supervisor -->
+        <div class="content-section supervisor-section">
+          <h3 class="section-label">Supervisor</h3>
+          <p class="supervisor-name">Mr. Guhanathan Poravi</p>
+        </div>
+
+        <!-- Affiliation -->
+        <div class="content-section">
+          <h3 class="section-label">Affiliation</h3>
+          <p class="section-text">Informatics Institute of Technology, affiliated with University of Westminster, UK</p>
+        </div>
+
+        <!-- Research Areas -->
+        <div class="content-section">
+          <h3 class="section-label">Research Areas</h3>
+          <div class="research-tags">
+            <span class="research-tag">Computer Vision</span>
+            <span class="research-tag">Medical Image Analysis</span>
+            <span class="research-tag">Deep Learning</span>
+            <span class="research-tag">Explainable AI</span>
+            <span class="research-tag">Global Health Technology</span>
+          </div>
+        </div>
+
+        <!-- About -->
+        <div class="content-section">
+          <h3 class="section-label">About</h3>
+          <p class="section-text">MALARION was developed as part of a final year undergraduate research project aimed at automating malaria parasite detection in resource-limited clinical settings using deep learning.</p>
+        </div>
+      </div>
+
+      <!-- Contact Section -->
+      <div class="author-contact">
+        <a href="mailto:999sasmith@gmail.com" class="contact-btn contact-email">
+          <span class="contact-icon">✉</span> Email
+        </a>
+        <a href="https://www.linkedin.com/in/dev-ranasinghe/" target="_blank" rel="noopener noreferrer" class="contact-btn contact-linkedin">
+          <span class="contact-icon">in</span> LinkedIn
+        </a>
+        <a href="https://github.com/Dev-Ranasinghe/devvv-malarion-fyp" target="_blank" rel="noopener noreferrer" class="contact-btn contact-github">
+          <span class="contact-icon">★</span> GitHub
+        </a>
+      </div>
     </div>
   </div>
 </div>
@@ -342,6 +747,7 @@
 
 </main>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="/static/js/app.js"></script>
 </body>
 </html>

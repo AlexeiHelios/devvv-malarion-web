@@ -12,10 +12,23 @@ function startApp() {
   const coverPage = document.getElementById('coverPage');
   const appHeader = document.getElementById('appHeader');
   const appMain = document.getElementById('appMain');
+  const performancePage = document.getElementById('performancePage');
+  const howItWorksPage = document.getElementById('howItWorksPage');
+  const researchersPage = document.getElementById('researchersPage');
   
-  coverPage.style.display = 'none';
-  appHeader.style.display = 'block';
-  appMain.style.display = 'grid';
+  // Hide all pages
+  if (coverPage) coverPage.style.display = 'none';
+  if (performancePage) performancePage.style.display = 'none';
+  if (howItWorksPage) howItWorksPage.style.display = 'none';
+  if (researchersPage) researchersPage.style.display = 'none';
+  
+  // Show dashboard
+  if (appHeader) appHeader.style.display = 'block';
+  if (appMain) appMain.style.display = 'grid';
+  
+  // Set active nav (Analyze Tool)
+  setActiveNav(document.querySelector('.nav-menu a[href="#analyze"]'));
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 // ─────── Animated background for cover page ────────
@@ -37,15 +50,26 @@ function initializeBackgroundAnimation() {
       this.x = Math.random() * canvas.width;
       this.y = Math.random() * canvas.height;
       this.size = Math.random() * 3 + 1;
-      this.speedX = (Math.random() - 0.5) * 0.8;
-      this.speedY = (Math.random() - 0.5) * 0.8;
-      this.opacity = Math.random() * 0.6 + 0.3;
+      // Slower drift speeds for atmospheric effect
+      this.speedX = (Math.random() - 0.5) * 0.3;
+      this.speedY = (Math.random() - 0.5) * 0.3;
+      this.opacity = Math.random() * 0.6 + 0.2;
       this.color = ['#6c5ce7', '#a29bfe', '#8e7fd1', '#9d8ee2'][Math.floor(Math.random() * 4)];
+      // Add floating motion offset
+      this.floatOffset = Math.random() * Math.PI * 2;
+      this.floatSpeed = Math.random() * 0.01 + 0.005;
     }
     
-    update() {
+    update(time) {
+      // Base drift
       this.x += this.speedX;
       this.y += this.speedY;
+      
+      // Add subtle floating/drifting motion using sine waves
+      this.x += Math.sin(time + this.floatOffset) * 0.15;
+      this.y += Math.cos(time + this.floatOffset * 0.8) * 0.15;
+      
+      // Wrap around edges
       if (this.x > canvas.width) this.x = 0;
       if (this.x < 0) this.x = canvas.width;
       if (this.y > canvas.height) this.y = 0;
@@ -58,6 +82,11 @@ function initializeBackgroundAnimation() {
       ctx.beginPath();
       ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
       ctx.fill();
+      // Add subtle glow
+      ctx.strokeStyle = this.color;
+      ctx.lineWidth = 0.5;
+      ctx.globalAlpha = this.opacity * 0.3;
+      ctx.stroke();
       ctx.globalAlpha = 1;
     }
   }
@@ -71,7 +100,7 @@ function initializeBackgroundAnimation() {
   }
   
   function animate() {
-    time += 0.002;
+    time += 0.003;
     
     // Dynamic gradient background
     const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
@@ -82,23 +111,40 @@ function initializeBackgroundAnimation() {
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
-    // Add subtle animated glow
-    const glowGradient = ctx.createRadialGradient(
-      canvas.width * 0.5 + Math.sin(time) * 100,
-      canvas.height * 0.5 + Math.cos(time) * 100,
+    // Add animated pulsing glow with multiple layers
+    const pulseIntensity = Math.sin(time * 0.5) * 0.5 + 0.5;
+    
+    // Primary glow
+    const glowGradient1 = ctx.createRadialGradient(
+      canvas.width * 0.5 + Math.sin(time * 0.3) * 150,
+      canvas.height * 0.5 + Math.cos(time * 0.3) * 150,
       0,
       canvas.width * 0.5,
       canvas.height * 0.5,
-      Math.max(canvas.width, canvas.height)
+      Math.max(canvas.width, canvas.height) * 0.8
     );
-    glowGradient.addColorStop(0, 'rgba(108, 92, 231, 0.05)');
-    glowGradient.addColorStop(1, 'rgba(108, 92, 231, 0)');
-    ctx.fillStyle = glowGradient;
+    glowGradient1.addColorStop(0, `rgba(108, 92, 231, ${0.08 * pulseIntensity})`);
+    glowGradient1.addColorStop(1, 'rgba(108, 92, 231, 0)');
+    ctx.fillStyle = glowGradient1;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
-    // Update and draw particles
+    // Secondary swept glow
+    const glowGradient2 = ctx.createRadialGradient(
+      canvas.width * 0.5 + Math.sin(time * 0.2 + Math.PI) * 200,
+      canvas.height * 0.5 + Math.cos(time * 0.2 + Math.PI) * 200,
+      0,
+      canvas.width * 0.5,
+      canvas.height * 0.5,
+      Math.max(canvas.width, canvas.height) * 0.6
+    );
+    glowGradient2.addColorStop(0, `rgba(162, 155, 254, ${0.04 * (1 - pulseIntensity)})`);
+    glowGradient2.addColorStop(1, 'rgba(162, 155, 254, 0)');
+    ctx.fillStyle = glowGradient2;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Update and draw particles with slow drift
     particles.forEach(particle => {
-      particle.update();
+      particle.update(time);
       particle.draw();
     });
     
@@ -113,6 +159,9 @@ function initializeBackgroundAnimation() {
 // Initialize on load
 document.addEventListener('DOMContentLoaded', function() {
   initializeBackgroundAnimation();
+  
+  // Set Home as active nav on page load
+  setActiveNav(document.querySelector('.nav-menu a[href="#home"]'));
 });
 
 // ── Mode switcher ─────────────────────────────────────────────────────
@@ -697,3 +746,84 @@ function escHtml(str) {
     .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 }
 function capitalize(s) { return s ? s[0].toUpperCase() + s.slice(1) : ""; }
+
+// ── Navigation functions ────────────────────────────────────────────
+function setActiveNav(navItem) {
+  // Remove active class from all nav links
+  document.querySelectorAll('.nav-menu a').forEach(link => {
+    link.classList.remove('active');
+  });
+  
+  // Add active class to the clicked nav item
+  if (navItem) {
+    navItem.classList.add('active');
+  }
+}
+
+function scrollToCover() {
+  const coverPage = document.getElementById('coverPage');
+  const appHeader = document.getElementById('appHeader');
+  const appMain = document.getElementById('appMain');
+  const performancePage = document.getElementById('performancePage');
+  
+  // Hide all pages
+  appHeader.style.display = 'none';
+  appMain.style.display = 'none';
+  performancePage.style.display = 'none';
+  
+  // Show cover page
+  coverPage.style.display = 'flex';
+  
+  // Close mobile menu
+  const navMenu = document.querySelector('.nav-menu');
+  if (navMenu) navMenu.classList.remove('active');
+  
+  // Set active nav (Home)
+  setActiveNav(document.querySelector('.nav-menu a[href="#home"]'));
+  
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function scrollToSection(sectionId) {
+  // Close mobile menu
+  const navMenu = document.querySelector('.nav-menu');
+  if (navMenu) navMenu.classList.remove('active');
+  
+  const coverPage = document.getElementById('coverPage');
+  const appHeader = document.getElementById('appHeader');
+  const appMain = document.getElementById('appMain');
+  const performancePage = document.getElementById('performancePage');
+  const howItWorksPage = document.getElementById('howItWorksPage');
+  const researchersPage = document.getElementById('researchersPage');
+  
+  // Hide all pages explicitly
+  if (coverPage) coverPage.style.display = 'none';
+  if (appHeader) appHeader.style.display = 'none';
+  if (appMain) appMain.style.display = 'none';
+  if (performancePage) performancePage.style.display = 'none';
+  if (howItWorksPage) howItWorksPage.style.display = 'none';
+  if (researchersPage) researchersPage.style.display = 'none';
+  
+  // Show requested section
+  const sectionLower = sectionId.toLowerCase();
+  if (sectionLower === 'performance') {
+    if (performancePage) performancePage.style.display = 'block';
+  } else if (sectionLower === 'howitworks') {
+    if (howItWorksPage) howItWorksPage.style.display = 'block';
+  } else if (sectionLower === 'researchers') {
+    if (researchersPage) researchersPage.style.display = 'block';
+  }
+  
+  // Set active nav
+  const navItem = document.querySelector(`.nav-menu a[href="#${sectionLower}"]`);
+  setActiveNav(navItem);
+  
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function toggleNavMenu() {
+  const navMenu = document.querySelector('.nav-menu');
+  if (navMenu) {
+    navMenu.classList.toggle('active');
+  }
+}
