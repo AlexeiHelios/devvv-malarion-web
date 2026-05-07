@@ -12,10 +12,8 @@ RUN pip install --no-cache-dir opencv-python-headless && \
 
 COPY . .
 
-ARG HF_TOKEN
-ENV HF_TOKEN=$HF_TOKEN
-
-RUN python download_weights.py
+RUN --mount=type=secret,id=HF_TOKEN \
+    HF_TOKEN=$(cat /run/secrets/HF_TOKEN) python download_weights.py
 
 EXPOSE 8080
 
