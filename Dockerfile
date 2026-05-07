@@ -7,9 +7,15 @@ RUN apt-get update && apt-get install -y libgl1 libglib2.0-0 && rm -rf /var/lib/
 COPY requirements.txt .
 
 RUN pip install --no-cache-dir opencv-python-headless && \
-    pip install --no-cache-dir -r requirements.txt
+    pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir huggingface-hub
 
 COPY . .
+
+ARG HF_TOKEN
+ENV HF_TOKEN=$HF_TOKEN
+
+RUN python download_weights.py
 
 EXPOSE 8080
 
